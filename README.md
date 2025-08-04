@@ -50,11 +50,8 @@ This system scrapes competitor booking data from Onsen (9 hot tubs) to inform:
 # Install dependencies
 pip install -r requirements.txt
 
-# Test scraper (visible browser)
-python onsen_scraper_v4_9spas.py
-
-# Production mode (headless)
-python onsen_scraper_v4_9spas.py --production
+# Run complete scraper and analytics
+python complete_4spa_system.py
 ```
 
 ### Scheduling
@@ -65,14 +62,15 @@ Runs automatically via Railway cron:
 ## 📁 Project Structure
 
 ```
-onsen/
-├── onsen_scraper_v4_9spas.py    # Main scraper (9-spa model)
-├── sheets_writer.py              # Google Sheets integration
-├── scheduler_fixed.py            # Scheduler for continuous runs
-├── railway.toml                  # Railway deployment config
-├── requirements.txt              # Python dependencies
-├── onsen-scraping-*.json         # Google service account key
-└── onsen_exports/               # CSV backup files
+onsen-scrapping/
+├── complete_4spa_system.py   # One-command scraper and analytics
+├── scheduler_fixed.py        # Scheduler for continuous runs
+├── sheets_writer.py          # Google Sheets helper
+├── onsen_scraper_v4.py       # Legacy scraper script
+├── onsen_scraper_v4_FIXED.py # Legacy scraper with fixes
+├── railway.toml              # Railway deployment config
+├── Dockerfile                # Container configuration
+└── requirements.txt          # Python dependencies
 ```
 
 ## 📈 Key Metrics Tracked
@@ -85,10 +83,10 @@ onsen/
 
 ## 🔧 Configuration
 
-Edit `onsen_scraper_v4_9spas.py` to adjust:
-- `MAX_CAPACITY_PER_SLOT`: Number of spas (currently 9)
-- `GUEST_TYPES`: Pricing and distribution
+Edit `complete_4spa_system.py` to adjust:
 - `SHEET_ID`: Google Sheets destination
+- `COMPETITOR_SPAS`/`CLIENT_SPAS`: Capacity settings
+- `GUEST_TYPES`: Pricing and distribution
 
 ## 📊 Google Sheets Structure
 
