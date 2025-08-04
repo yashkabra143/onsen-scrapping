@@ -3,6 +3,21 @@ from google.oauth2.service_account import Credentials
 import os
 import sys
 
+# Default headers used when creating a new worksheet
+HEADER_ROW = [
+    "Date",
+    "Time",
+    "Slots_Booked",
+    "Slots_Available",
+    "Total_Capacity",
+    "Occupancy_Rate",
+    "Revenue_Estimated",
+    "Horizon_Days",
+    "Scraped_At",
+    "Data_Source",
+    "Created_At",
+]
+
 
 def apply_default_formatting(worksheet):
     """Apply default formatting to keep headers styled consistently."""
@@ -87,14 +102,15 @@ def write_to_sheets(sheet_id, tab_name, data):
         print(f"❌ Error writing to sheets: {str(e)}", flush=True)
         raise
 
-def append_to_sheets(sheet_id, tab_name, data):
+def append_to_sheets(sheet_id, tab_name, data, headers=HEADER_ROW):
     """
     Append data to a specific tab in Google Sheets (keeps existing data).
-    
+
     Args:
         sheet_id: Google Sheets ID
         tab_name: Name of the tab/worksheet to append to
         data: 2D list of data to append (without headers)
+        headers: List of column headers to write if sheet is created
     """
     try:
         client, json_keyfile = authenticate()
@@ -107,21 +123,23 @@ def append_to_sheets(sheet_id, tab_name, data):
         try:
             worksheet = sheet.worksheet(tab_name)
             print(f"Found existing worksheet: {tab_name}", flush=True)
-            
+
             # Find the last row with data
             all_values = worksheet.get_all_values()
             last_row = len(all_values)
-            
+
             # If sheet is empty (no headers), start from row 1
             if last_row == 0:
                 next_row = 1
             else:
                 next_row = last_row + 1
-                
+
         except gspread.exceptions.WorksheetNotFound:
             print(f"Creating new worksheet: {tab_name}", flush=True)
             worksheet = sheet.add_worksheet(title=tab_name, rows=1000, cols=20)
-            next_row = 1
+            worksheet.update("A1", [headers])
+            apply_default_formatting(worksheet)
+            next_row = 2
         
         # Append the data
         if data:

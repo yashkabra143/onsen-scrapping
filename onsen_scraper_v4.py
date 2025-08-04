@@ -540,22 +540,28 @@ def run_scraper(headless=True, test_mode=False):
         if all_historical_data:
             try:
                 print(f"\n📈 Appending {len(all_historical_data)} records to Historical Data tab...", flush=True)
-                
-                # Check if we need headers (first time)
-                from sheets_writer import check_if_sheet_exists
+
                 historical_tab = "📈 Historical Data (9-Spa Model)"
-                
-                if not check_if_sheet_exists(SHEET_ID, historical_tab):
-                    # First time - write with headers
-                    headers = [["Scrape Timestamp", "Booking Date", "Time Slot", "Slots Available", "Slots Booked", "Revenue", "Horizon"]]
-                    headers.extend(all_historical_data)
-                    write_to_sheets(SHEET_ID, historical_tab, headers)
-                    print(f"✅ Created Historical Data tab with {len(all_historical_data)} records", flush=True)
-                else:
-                    # Append to existing data
-                    append_to_sheets(SHEET_ID, historical_tab, all_historical_data)
-                    print(f"✅ Appended {len(all_historical_data)} records to Historical Data", flush=True)
-                    
+                historical_headers = [
+                    "Scrape Timestamp",
+                    "Booking Date",
+                    "Time Slot",
+                    "Slots Available",
+                    "Slots Booked",
+                    "Revenue",
+                    "Horizon",
+                ]
+                append_to_sheets(
+                    SHEET_ID,
+                    historical_tab,
+                    all_historical_data,
+                    headers=historical_headers,
+                )
+                print(
+                    f"✅ Appended {len(all_historical_data)} records to Historical Data",
+                    flush=True,
+                )
+
             except Exception as e:
                 print(f"⚠️ Historical data append error: {e}", flush=True)
         
