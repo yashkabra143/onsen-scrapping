@@ -1,0 +1,94 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+onsen_exports/
+final_archive_20250625_005355/
+final_archive_20250625_005544/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Credentials and Sensitive Data
+*.json
+!requirements.json
+*.pem
+*.key
+.env
+.env.local
+
+# Logs and Runtime Files
+*.log
+logs/
+scheduler.log
+scrape_history.json
+last_scrape.json
+
+# Output Directories
+onsen_exports/
+fallback_logs/
+debug_output/
+_archive*/
+
+# Test and Temporary Files
+*.tmp
+*.temp
+*.bak
+.coverage
+htmlcov/
+.pytest_cache/
+.coverage.*
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+.dockerignore
+
+# Node (if any frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Google Apps Script (local only)
+*.gs
+
+# Archive folders
+archive/
+_archive*/
+old/
+backup/
