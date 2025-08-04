@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [deploy]
 # Updated to use the FIXED version with improved data collection
-startCommand = "python3 onsen_scraper_v4_FIXED.py --production"
+startCommand = "python3 complete_4spa_system.py"
 
 # OPTIMIZED SCHEDULE: Every 4 hours at key NZ business times
 # Focus on peak booking activity periods for better data quality
@@ -13,25 +13,25 @@ startCommand = "python3 onsen_scraper_v4_FIXED.py --production"
 # 08:00 NZT = 20:00 UTC (previous day) / 19:00 UTC during DST
 # Morning business hours - captures overnight bookings
 schedule = "0 20 * * *"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
 
 [[cronjobs]]
 # 12:00 NZT = 00:00 UTC / 23:00 UTC during DST
 # Lunch time - peak booking period
 schedule = "0 0 * * *"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
 
 [[cronjobs]]
 # 16:00 NZT = 04:00 UTC / 03:00 UTC during DST
 # Afternoon - business day bookings
 schedule = "0 4 * * *"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
 
 [[cronjobs]]
 # 20:00 NZT = 08:00 UTC / 07:00 UTC during DST
 # Evening - after work bookings
 schedule = "0 8 * * *"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
 
 # ADDITIONAL WEEKEND PEAK TIMES
 
@@ -39,17 +39,17 @@ command = "python3 onsen_scraper_v4_FIXED.py --production"
 # Saturday & Sunday 10:00 NZT = 22:00 UTC (Friday/Saturday) / 21:00 UTC during DST
 # Weekend morning peak
 schedule = "0 22 * * 5,6"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
 
 [[cronjobs]]
 # Saturday & Sunday 14:00 NZT = 02:00 UTC / 01:00 UTC during DST
 # Weekend afternoon peak
 schedule = "0 2 * * 6,0"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
 
 # BACKUP SCHEDULE: Once daily at 6 AM NZT for data continuity
 [[cronjobs]]
 # 06:00 NZT = 18:00 UTC (previous day) / 17:00 UTC during DST
 # Early morning backup scrape
 schedule = "0 18 * * *"
-command = "python3 onsen_scraper_v4_FIXED.py --production"
+command = "python3 complete_4spa_system.py"
