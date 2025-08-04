@@ -95,6 +95,13 @@ The scraper populates these tabs:
 - **SameDay_Mirror**, etc.: Conservative estimates
 - **📈 Historical Data (9-Spa Model)**: All data over time
 
+### Sheet Updates on Rerun
+
+Each execution clears only the data rows (starting at row 2) while keeping the
+header row and any existing formatting intact. If a full reset of a worksheet is
+ever needed, run the clear manually and then reapply formatting using the helper
+in `sheets_writer.py`.
+
 ## 🛠️ Troubleshooting
 
 1. **No data appearing**: Check `fallback_logs/` for screenshots
