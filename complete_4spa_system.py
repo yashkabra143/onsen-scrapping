@@ -357,52 +357,56 @@ class Complete4SpaSystem:
         print(f"📝 Writing data to {tab_name}...", flush=True)
 
         try:
-            # Create or clear worksheet
+            # Get or create worksheet without clearing existing data
             try:
                 worksheet = self.spreadsheet.worksheet(tab_name)
-                worksheet.clear()
-            except:
+            except Exception:
                 worksheet = self.spreadsheet.add_worksheet(title=tab_name, rows=1000, cols=25)
 
             if not data:
                 print(f"   ⚠️ No data to write for {tab_name}", flush=True)
                 return
 
-            # Prepare competitor data
+            # Determine last used row
+            existing_values = worksheet.get_all_values()
+            last_row = len(existing_values)
+
+            # Optional batch timestamp column
+            batch_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # Prepare headers
             competitor_headers = list(data[0].keys())
-            values = [competitor_headers]
+            mirror_headers = []
 
-            for row in data:
-                values.append([str(row.get(h, '')) for h in competitor_headers])
+            rows_to_append = []
 
-            # Write competitor data
-            worksheet.update(values=values, range_name='A1')
-
-            # Add mirror data if requested
             if include_mirror:
                 mirror_data = self.create_mirror_data(data)
-
                 if mirror_data:
-                    # Find starting column for mirror data
-                    mirror_start_col = len(competitor_headers) + 2
                     mirror_headers = list(mirror_data[0].keys())
+            
+            combined_headers = competitor_headers + mirror_headers + ['Batch_Timestamp']
 
-                    # Write mirror headers
-                    mirror_range = f"{self.col_to_letter(mirror_start_col)}1"
-                    worksheet.update(values=[mirror_headers], range_name=mirror_range)
+            # Build rows with optional mirror data
+            for idx, row in enumerate(data):
+                row_values = [str(row.get(h, '')) for h in competitor_headers]
+                if mirror_headers:
+                    mirror_row = mirror_data[idx] if idx < len(mirror_data) else {}
+                    row_values.extend([str(mirror_row.get(h, '')) for h in mirror_headers])
+                row_values.append(batch_timestamp)
+                rows_to_append.append(row_values)
 
-                    # Write mirror data
-                    mirror_values = []
-                    for row in mirror_data:
-                        mirror_values.append([str(row.get(h, '')) for h in mirror_headers])
+            # Write header if sheet is empty
+            if last_row == 0:
+                worksheet.append_rows([combined_headers] + rows_to_append)
+            else:
+                worksheet.append_rows(rows_to_append)
 
-                    mirror_data_range = f"{self.col_to_letter(mirror_start_col)}2"
-                    worksheet.update(values=mirror_values, range_name=mirror_data_range)
+            # Apply formatting to include newly appended rows
+            total_data_rows = (last_row - 1 if last_row > 0 else 0) + len(rows_to_append)
+            self.format_worksheet(worksheet, total_data_rows)
 
-            # Apply formatting
-            self.format_worksheet(worksheet, len(data))
-
-            print(f"   ✅ Successfully wrote {len(data)} rows to {tab_name}", flush=True)
+            print(f"   ✅ Successfully wrote {len(rows_to_append)} rows to {tab_name}", flush=True)
 
         except Exception as e:
             print(f"   ❌ Error writing to {tab_name}: {e}", flush=True)
