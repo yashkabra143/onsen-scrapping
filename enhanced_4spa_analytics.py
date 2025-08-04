@@ -14,6 +14,7 @@ from google.oauth2.service_account import Credentials
 import time
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Add project directory to path
 sys.path.append('/Users/yashkabra/Desktop/onsen-scraper-deploy')
@@ -61,58 +62,79 @@ class Enhanced4SpaAnalytics:
             raise
 
     def get_weather_data(self, date=None):
-        """
-        Fetch weather data using OpenWeatherMap API (free tier)
-        Returns current weather and forecast for Wanaka, NZ
+        """Fetch weather data using the Open-Meteo API.
+
+        Open-Meteo provides free weather forecasts without requiring an API
+        key, which keeps the analytics pipeline self-contained. The function
+        returns basic conditions for Wanaka, NZ and computes a simplified
+        weather score that is later used to adjust demand projections.
         """
         if date is None:
             date = datetime.now()
 
         try:
-            # Free OpenWeatherMap API - replace with your API key
-            api_key = "YOUR_OPENWEATHER_API_KEY"  # Client needs to get this free API key
+            day_str = date.strftime('%Y-%m-%d')
+            url = (
+                "https://api.open-meteo.com/v1/forecast"
+                f"?latitude={self.WANAKA_LAT}&longitude={self.WANAKA_LNG}"
+                "&hourly=temperature_2m,relative_humidity_2m,visibility,wind_speed_10m,weathercode"
+                f"&start_date={day_str}&end_date={day_str}&timezone=Pacific/Auckland"
+            )
 
-            # Current weather
-            current_url = f"http://api.openweathermap.org/data/2.5/weather?lat={self.WANAKA_LAT}&lon={self.WANAKA_LNG}&appid={api_key}&units=metric"
-
-            # For demo purposes, return mock data if API key not set
-            if api_key == "YOUR_OPENWEATHER_API_KEY":
-                return {
-                    'temperature': 12.5,
-                    'description': 'Partly cloudy',
-                    'humidity': 65,
-                    'wind_speed': 8.2,
-                    'visibility': 10000,
-                    'weather_score': 7.5  # 1-10 scale for spa suitability
-                }
-
-            response = requests.get(current_url)
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
             data = response.json()
 
-            # Calculate weather suitability score for spa activities
-            temp = data['main']['temp']
-            weather_score = self.calculate_weather_score(temp, data['weather'][0]['main'], data['main']['humidity'])
+            # Use midday values as representative for the day
+            temp = data['hourly']['temperature_2m'][12]
+            humidity = data['hourly']['relative_humidity_2m'][12]
+            wind = data['hourly']['wind_speed_10m'][12]
+            visibility = data['hourly'].get('visibility', [10000])[12]
+            code = data['hourly'].get('weathercode', [0])[12]
+
+            description = self.decode_weather_code(code)
+            weather_score = self.calculate_weather_score(temp, description, humidity)
 
             return {
                 'temperature': temp,
-                'description': data['weather'][0]['description'],
-                'humidity': data['main']['humidity'],
-                'wind_speed': data['wind']['speed'],
-                'visibility': data.get('visibility', 10000),
-                'weather_score': weather_score
+                'description': description,
+                'humidity': humidity,
+                'wind_speed': wind,
+                'visibility': visibility,
+                'weather_score': weather_score,
             }
 
         except Exception as e:
             print(f"⚠️ Weather API error: {e}")
-            # Return default values if API fails
             return {
                 'temperature': 12.0,
                 'description': 'Data unavailable',
                 'humidity': 70,
                 'wind_speed': 5.0,
                 'visibility': 8000,
-                'weather_score': 6.0
+                'weather_score': 6.0,
             }
+
+    def decode_weather_code(self, code):
+        """Map Open-Meteo weather codes to simple textual descriptions."""
+        codes = {
+            0: 'Clear',
+            1: 'Mainly clear',
+            2: 'Partly cloudy',
+            3: 'Overcast',
+            45: 'Fog',
+            48: 'Freezing fog',
+            51: 'Light drizzle',
+            53: 'Drizzle',
+            55: 'Heavy drizzle',
+            61: 'Light rain',
+            63: 'Rain',
+            65: 'Heavy rain',
+            71: 'Snow',
+            80: 'Rain showers',
+            95: 'Thunderstorm',
+        }
+        return codes.get(code, 'Unknown')
 
     def get_sunset_data(self, date=None):
         """
@@ -287,7 +309,14 @@ class Enhanced4SpaAnalytics:
                 continue
 
     def calculate_revenue(self, bookings, time_str):
-        """Calculate revenue based on guest mix and time"""
+        """Calculate projected revenue for a single time slot.
+
+        Revenue is derived from the expected mix of guest types. During the
+        day (before 6 PM) the model assumes the full distribution of couples,
+        groups and families. After 6 PM families are excluded so the mix shifts
+        toward couples and groups. Prices are hard coded from the business
+        model assumptions.
+        """
         if bookings == 0:
             return 0
 
@@ -530,6 +559,10 @@ class Enhanced4SpaAnalytics:
             # Add trend explanations
             self.add_trends_explanations(worksheet, len(trends_data))
 
+            # Produce visualisation for client review
+            chart_path = self.generate_booking_trend_chart(trends_data)
+            print(f"📈 Saved booking trend chart to {chart_path}")
+
             print("✅ Booking Trends Analysis created")
 
         except Exception as e:
@@ -591,6 +624,31 @@ class Enhanced4SpaAnalytics:
             })
 
         return trends
+
+    def generate_booking_trend_chart(self, trends, filename="booking_trends.png"):
+        """Create professional 90‑day booking trend chart with overlays.
+
+        The chart visualises projected bookings with 7‑day and 30‑day moving
+        averages to address the client's request for trend clarity. It saves
+        the figure locally so it can be reviewed or uploaded to reports.
+        """
+        df = pd.DataFrame(trends)
+        df['Projected_Bookings'] = pd.to_numeric(df['Projected_Bookings'])
+        df['7_day_avg'] = df['Projected_Bookings'].rolling(7).mean()
+        df['30_day_avg'] = df['Projected_Bookings'].rolling(30).mean()
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(df['Day'], df['Projected_Bookings'], label='Projected bookings', color='steelblue')
+        plt.plot(df['Day'], df['7_day_avg'], label='7-day average', linestyle='--', color='orange')
+        plt.plot(df['Day'], df['30_day_avg'], label='30-day average', linestyle=':', color='green')
+        plt.xlabel('Days out')
+        plt.ylabel('Bookings')
+        plt.title('90-day Booking Trend')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close()
+        return filename
 
     def get_trend_direction(self, day):
         """Determine booking trend direction"""
