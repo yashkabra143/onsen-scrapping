@@ -18,11 +18,42 @@ HEADER_ROW = [
     "Created_At",
 ]
 
+# Extended headers used for day-based tabs if none are present
+EXTENDED_HEADER_ROW = [
+    "Date",
+    "Time",
+    "Slots_Booked",
+    "Slots_Available",
+    "Total_Capacity",
+    "Occupancy_Rate",
+    "Revenue_Estimated",
+    "Horizon_Days",
+    "Scraped_At",
+    "Data_Source",
+    "Date",
+    "Time",
+    "Client_Slots_Booked",
+    "Client_Slots_Available",
+    "Client_Total_Capacity",
+    "Client_Occupancy_Rate",
+    "Client_Revenue_Projected",
+    "Competitor_Slots_Booked",
+    "Competitor_Occupancy_Rate",
+    "Competitor_Revenue",
+    "Performance_Factor",
+    "Reduction_Factor",
+    "Revenue_Per_Spa",
+    "Horizon_Days",
+    "Data_Source",
+    "Created_At",
+]
 
-def apply_default_formatting(worksheet):
+
+def apply_default_formatting(worksheet, headers):
     """Apply default formatting to keep headers styled consistently."""
     header_format = {"textFormat": {"bold": True}}
-    worksheet.format("A1:Z1", header_format)
+    end_col = chr(ord("A") + len(headers) - 1)
+    worksheet.format(f"A1:{end_col}1", header_format)
 
 def authenticate():
     """Authenticate with Google Sheets"""
@@ -85,15 +116,20 @@ def write_to_sheets(sheet_id, tab_name, data):
             print(f"Found existing worksheet: {tab_name}", flush=True)
         except gspread.exceptions.WorksheetNotFound:
             print(f"Creating new worksheet: {tab_name}", flush=True)
-            worksheet = sheet.add_worksheet(title=tab_name, rows=1000, cols=20)
+            cols = len(data[0]) if data else len(HEADER_ROW)
+            worksheet = sheet.add_worksheet(title=tab_name, rows=1000, cols=cols)
+
+        # Determine headers for formatting and clearing
+        headers_from_data = data[0] if data else HEADER_ROW
+        end_col = chr(ord('A') + len(headers_from_data) - 1)
 
         # Clear existing content but keep headers and formatting
-        worksheet.batch_clear(["A2:Z"])
+        worksheet.batch_clear([f"A2:{end_col}"])
 
         # Write the data
         if data:
             worksheet.update(values=data, range_name='A1')
-            apply_default_formatting(worksheet)
+            apply_default_formatting(worksheet, headers_from_data)
             print(f"✅ Successfully wrote {len(data)} rows to {tab_name}", flush=True)
         else:
             print(f"⚠️ No data to write to {tab_name}", flush=True)
@@ -102,7 +138,7 @@ def write_to_sheets(sheet_id, tab_name, data):
         print(f"❌ Error writing to sheets: {str(e)}", flush=True)
         raise
 
-def append_to_sheets(sheet_id, tab_name, data, headers=HEADER_ROW):
+def append_to_sheets(sheet_id, tab_name, data, headers=None):
     """
     Append data to a specific tab in Google Sheets (keeps existing data).
 
@@ -110,53 +146,48 @@ def append_to_sheets(sheet_id, tab_name, data, headers=HEADER_ROW):
         sheet_id: Google Sheets ID
         tab_name: Name of the tab/worksheet to append to
         data: 2D list of data to append (without headers)
-        headers: List of column headers to write if sheet is created
+        headers: Optional list of column headers to write if sheet is created
     """
     try:
         client, json_keyfile = authenticate()
         print(f"Using credentials file: {json_keyfile}", flush=True)
-        
-        # Open the spreadsheet
+
+        normalized_tab = tab_name.replace(" ", "").lower()
+        special_tabs = {"sameday", "sevendays", "thirtydays", "nintydays"}
+        if headers is None:
+            headers = EXTENDED_HEADER_ROW if normalized_tab in special_tabs else HEADER_ROW
+
         sheet = client.open_by_key(sheet_id)
-        
-        # Try to select the worksheet, create if it doesn't exist
+
         try:
             worksheet = sheet.worksheet(tab_name)
             print(f"Found existing worksheet: {tab_name}", flush=True)
-
-            # Find the last row with data
             all_values = worksheet.get_all_values()
-            last_row = len(all_values)
-
-            # If sheet is empty (no headers), start from row 1
-            if last_row == 0:
-                next_row = 1
+            if not all_values or all_values[0] != headers:
+                worksheet.update("A1", [headers])
+                apply_default_formatting(worksheet, headers)
+                next_row = 2
             else:
-                next_row = last_row + 1
-
+                next_row = len(all_values) + 1
         except gspread.exceptions.WorksheetNotFound:
             print(f"Creating new worksheet: {tab_name}", flush=True)
-            worksheet = sheet.add_worksheet(title=tab_name, rows=1000, cols=20)
+            worksheet = sheet.add_worksheet(title=tab_name, rows=1000, cols=len(headers))
             worksheet.update("A1", [headers])
-            apply_default_formatting(worksheet)
+            apply_default_formatting(worksheet, headers)
             next_row = 2
-        
-        # Append the data
+
         if data:
-            # Calculate the range for appending
             num_rows = len(data)
             num_cols = len(data[0]) if data else 0
-            
             end_row = next_row + num_rows - 1
             end_col = chr(ord('A') + num_cols - 1)
-            
             range_name = f'A{next_row}:{end_col}{end_row}'
-            
             worksheet.update(values=data, range_name=range_name)
+            apply_default_formatting(worksheet, headers)
             print(f"✅ Successfully appended {len(data)} rows to {tab_name} starting at row {next_row}", flush=True)
         else:
             print(f"⚠️ No data to append to {tab_name}", flush=True)
-            
+
     except Exception as e:
         print(f"❌ Error appending to sheets: {str(e)}", flush=True)
         raise
