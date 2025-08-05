@@ -123,14 +123,24 @@ def write_to_sheets(sheet_id, tab_name, data):
         headers_from_data = data[0] if data else HEADER_ROW
         end_col = chr(ord('A') + len(headers_from_data) - 1)
 
+        # Check existing headers to avoid unnecessary formatting
+        existing_headers = worksheet.row_values(1)
+        header_changed = existing_headers != headers_from_data
+
         # Clear existing content but keep headers and formatting
         worksheet.batch_clear([f"A2:{end_col}"])
 
-        # Write the data
-        if data:
-            worksheet.update(values=data, range_name='A1')
+        # Update header if needed
+        if header_changed:
+            worksheet.update("A1", [headers_from_data])
             apply_default_formatting(worksheet, headers_from_data)
-            print(f"✅ Successfully wrote {len(data)} rows to {tab_name}", flush=True)
+
+        # Write the data rows (excluding header)
+        data_rows = data[1:] if data else []
+        if data_rows:
+            worksheet.update(values=data_rows, range_name='A2')
+            rows_written = len(data_rows) + (1 if header_changed else 0)
+            print(f"✅ Successfully wrote {rows_written} rows to {tab_name}", flush=True)
         else:
             print(f"⚠️ No data to write to {tab_name}", flush=True)
 
@@ -183,7 +193,6 @@ def append_to_sheets(sheet_id, tab_name, data, headers=None):
             end_col = chr(ord('A') + num_cols - 1)
             range_name = f'A{next_row}:{end_col}{end_row}'
             worksheet.update(values=data, range_name=range_name)
-            apply_default_formatting(worksheet, headers)
             print(f"✅ Successfully appended {len(data)} rows to {tab_name} starting at row {next_row}", flush=True)
         else:
             print(f"⚠️ No data to append to {tab_name}", flush=True)
