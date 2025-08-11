@@ -64,9 +64,9 @@ def authenticate():
     
     # Try to find the JSON keyfile
     json_files = [
-        "onsen-scraping-e41c80c00b93.json",
-        "onsen-scraping-e41c80c00b930a5025ad1c8704c784a2c7e35b66.json",
-        os.path.join(os.path.dirname(__file__), "onsen-scraping-e41c80c00b93.json")
+        "onsen-scraping-fefa44f03c43.json",
+        "onsen-scraping-fefa44f03c430a5025ad1c8704c784a2c7e35b66.json",
+        os.path.join(os.path.dirname(__file__), "onsen-scraping-fefa44f03c43.json")
     ]
     
     json_keyfile = None

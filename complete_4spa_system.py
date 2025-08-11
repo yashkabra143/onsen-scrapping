@@ -35,7 +35,7 @@ class Complete4SpaSystem:
 
         # Configuration
         self.SHEET_ID = "1pZhSeGSosOTYjPHI62r0ma23jgVgLTnnBQwTtq0wvK4"  # New clean sheet
-        self.CREDENTIALS_FILE = "onsen-scraping-e41c80c00b93.json"
+        self.CREDENTIALS_FILE = "onsen-scraping-fefa44f03c43.json"
         self.ONSEN_URL = "https://book.onsen.co.nz/hire/selection?filter=prodgroup-original"
 
         # Export folders
@@ -367,10 +367,6 @@ class Complete4SpaSystem:
                 print(f"   ⚠️ No data to write for {tab_name}", flush=True)
                 return
 
-            # Determine last used row
-            existing_values = worksheet.get_all_values()
-            last_row = len(existing_values)
-
             # Optional batch timestamp column
             batch_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -396,14 +392,30 @@ class Complete4SpaSystem:
                 row_values.append(batch_timestamp)
                 rows_to_append.append(row_values)
 
-            # Write header if sheet is empty
-            if last_row == 0:
-                worksheet.append_rows([combined_headers] + rows_to_append)
-            else:
-                worksheet.append_rows(rows_to_append)
+            # Ensure header row exists and is correct
+            existing_values = worksheet.get_all_values()
+            first_row = existing_values[0] if existing_values else []
+            header_needs_update = (not first_row) or (first_row != combined_headers)
 
-            # Apply formatting to include newly appended rows
-            total_data_rows = (last_row - 1 if last_row > 0 else 0) + len(rows_to_append)
+            if header_needs_update:
+                worksheet.update('A1', [combined_headers])
+                # After setting header, data should start at row 2
+                next_row = 2
+            else:
+                # Continue after last populated row
+                next_row = len(existing_values) + 1
+
+            # Write rows directly under header
+            if rows_to_append:
+                num_cols = len(rows_to_append[0])
+                end_col_letter = self.col_to_letter(num_cols)
+                end_row = next_row + len(rows_to_append) - 1
+                range_name = f"A{next_row}:{end_col_letter}{end_row}"
+                worksheet.update(values=rows_to_append, range_name=range_name)
+
+            # Apply formatting to include newly written rows
+            previous_data_rows = max((len(existing_values) - 1), 0) if not header_needs_update else 0
+            total_data_rows = previous_data_rows + len(rows_to_append)
             self.format_worksheet(worksheet, total_data_rows)
 
             print(f"   ✅ Successfully wrote {len(rows_to_append)} rows to {tab_name}", flush=True)

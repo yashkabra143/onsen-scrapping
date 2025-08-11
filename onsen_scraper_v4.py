@@ -14,7 +14,7 @@ from selenium.webdriver.common.keys import Keys
 from sheets_writer import write_to_sheets, append_to_sheets
 
 # === CONFIGURATION ===
-SHEET_ID = "1xFtJvQLeI65YD2-twrGzh8g0c5pGTwODe8i5XFK7bZ0"
+SHEET_ID = "1pZhSeGSosOTYjPHI62r0ma23jgVgLTnnBQwTtq0wvK4"
 ONSEN_URL = "https://book.onsen.co.nz/hire/selection?filter=prodgroup-original"
 CSV_EXPORT_FOLDER = "./onsen_exports"
 FALLBACK_FOLDER = "./fallback_logs"

@@ -187,7 +187,7 @@ def initialize():
     required_files = [
         'onsen_scraper_v4.py',
         'sheets_writer.py',
-        'onsen-scraping-e41c80c00b93.json'
+        'onsen-scraping-fefa44f03c43.json'
     ]
     
     for file in required_files:
